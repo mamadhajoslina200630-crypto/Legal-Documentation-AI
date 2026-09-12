@@ -1,0 +1,501 @@
+# Legal AI Platform (Background Processing)
+
+> **Purpose:** Complete implementation blueprint for `Background Processing`.
+>
+> This document is the authoritative specification for building this service. Developers must be able to understand **what the service does, what it owns, what it receives, what it produces, how it connects to the rest of the platform, and what rules it must follow** without requiring additional architectural decisions.
+
+---
+
+# 1. SERVICE IDENTITY
+
+## 1.1 Service Name
+
+`Legal AI Platform - Background Processing`
+
+## 1.2 Service ID
+
+`sys-background-core-platform`
+
+## 1.3 Service Category
+
+`Platform Engineering & Infrastructure`
+
+## 1.4 Service Type
+
+`Asynchronous Task Engine`
+
+## 1.5 Primary Responsibility
+
+Clearly define the **single primary responsibility** of this service.
+
+The Background Processing Engine must:
+
+* Execute all heavy, long-running, or computationally expensive tasks (OCR, RAG Embeddings, complex AI generations) outside of the main FastAPI web server thread.
+* Manage task queues, retries, exponential backoffs, and failure states.
+* Provide a standardized way for the FastAPI layer to dispatch work and check on its progress.
+
+The service must **not** handle user HTTP requests directly.
+
+## 1.6 Business Purpose
+
+Explain why this service exists and what problem it solves.
+Web servers (like Uvicorn running FastAPI) are designed to handle thousands of fast requests per second. If a user uploads a 500-page PDF, processing that file could take 2 minutes. If the web server waits for that to finish, it blocks other users from using the app. This service decouples the heavy lifting, ensuring the platform remains blazingly fast and responsive.
+
+## 1.7 User Value
+
+Explain what the user gains from this service.
+Users never experience a "frozen" or "hanging" web page. They can upload massive documents and immediately continue using other parts of the platform while the document processes in the background.
+
+## 1.8 Final Outcome
+
+Define exactly what successful completion of this service produces.
+A fully configured Celery cluster backed by Redis, with distinct task queues, strict idempotency rules, and a clear monitoring interface (e.g., Celery Flower).
+
+---
+
+# 2. SCOPE
+
+## 2.1 In Scope
+
+List everything this service is responsible for.
+
+* Celery Application Configuration.
+* Redis Message Broker setup.
+* Celery Result Backend setup (Redis/Postgres).
+* Definition of specific task queues (`ocr_queue`, `ai_queue`, `default_queue`).
+* Task routing logic.
+* Scheduled tasks (Cron / Celery Beat) for DB cleanup.
+
+## 2.2 Out of Scope
+
+Explicitly list what this service must NOT implement.
+
+* The actual business logic inside the tasks (e.g., *how* to do OCR is defined in Document Processing; this service just dictates *how* to run it asynchronously).
+
+## 2.3 Dependencies on Other Services
+
+List services/capabilities this service requires.
+
+| Dependency  | Why Required | Required Data |
+| ----------- | ------------ | ------------- |
+| `Redis` | Message broker to hold pending jobs | Task JSON payload |
+| `FastAPI Layer` | To trigger the tasks | User Intents |
+
+## 2.4 Services Depending on This Service
+
+List services that may consume this service's output.
+`Document Processing`, `RAG Architecture`, and heavy `Core Legal Services` (like full-document translation) all depend on this engine.
+
+---
+
+# 3. USER EXPERIENCE
+
+## 3.1 User Entry Point
+N/A (Internal).
+
+## 3.2 User Input
+N/A
+
+## 3.3 User Flow
+N/A
+
+## 3.4 User States
+N/A
+
+## 3.5 User-Visible Result
+N/A
+
+---
+
+# 4. SERVICE WORKFLOW
+
+Define the complete internal workflow.
+
+```text
+FASTAPI ROUTE
+  ↓ (Calls celery_app.send_task())
+REDIS BROKER (Queue)
+  ↓ (Holds task until a worker is free)
+CELERY WORKER (Pulls task from Queue)
+  ↓
+EXECUTES TASK (e.g., OCR or Embedding)
+  ↓
+UPDATES DB STATUS (Pending -> Completed)
+  ↓
+SAVES RESULT TO REDIS BACKEND
+```
+
+For each step define:
+
+### Step 1 — Dispatch
+**Purpose:** Offload work quickly.
+**Input:** Function name and arguments.
+**Output:** Celery `task_id`.
+**Rules:**
+* FastAPI must return the `task_id` to the frontend instantly (HTTP 202 Accepted).
+* Never pass complex ORM objects as task arguments; pass only primitives (like `document_id` UUIDs) to avoid serialization errors.
+
+### Step 2 — Execution
+**Purpose:** Perform the heavy lifting.
+**Input:** Primitives (UUIDs).
+**Output:** Success/Failure.
+**Rules:**
+* The worker must instantiate its own database session using the provided ID.
+
+### Step 3 — Status Tracking
+**Purpose:** Allow UI to show progress.
+**Input:** State updates (`task.update_state()`).
+**Output:** Polling endpoint responses.
+**Rules:**
+* Long tasks must emit progress updates (e.g., `meta={'progress': 50}`).
+
+---
+
+# 5. INPUT CONTRACT
+
+Define exactly what the service accepts.
+
+## 5.1 Required Inputs
+
+| Input     | Type     | Required | Rules     |
+| --------- | -------- | -------- | --------- |
+| `Task ID` | `UUID` | Yes | Generated by Celery |
+| `Kwargs` | `Dict` | Yes | Must be JSON serializable |
+
+## 5.2 Optional Inputs
+
+N/A
+
+## 5.3 Input Validation Rules
+
+* Task arguments must be strictly typed using Pydantic (or Python type hints) inside the Celery `@task` definition.
+
+---
+
+# 6. OUTPUT CONTRACT
+
+## 6.1 Primary Output
+Task execution success or failure.
+
+## 6.2 Output Structure
+N/A
+
+## 6.3 Output Rules
+N/A
+
+---
+
+# 7. BUSINESS RULES
+
+This section contains the **non-negotiable rules** of the service.
+
+## 7.1 Core Rules
+
+* **Stateless Workers:** Celery workers must not hold state in memory between tasks.
+* **Separation of Queues:** Fast tasks and slow tasks must not share the same queue. If a user requests a 1-second task, they shouldn't wait behind someone's 5-minute OCR task.
+
+## 7.2 Validation Rules
+N/A
+
+## 7.3 Decision Rules
+
+* **Task Routing:**
+  * OCR tasks route to `queue='ocr'` (Requires high CPU/RAM).
+  * API calls to external LLMs route to `queue='ai'` (I/O bound).
+  * Quick database updates route to `queue='default'`.
+
+## 7.4 Failure Rules
+
+* Unhandled exceptions inside a Celery task must trigger the `@task(autoretry_for=(Exception,), max_retries=3)` logic.
+* If a task fails 3 times, it must be sent to a Dead Letter Queue (DLQ) and the corresponding Postgres record (e.g., Document) must be marked as `FAILED`.
+
+## 7.5 Boundary Rules
+N/A
+
+---
+
+# 8. DOCUMENT CONTEXT
+
+N/A - Background processing is agnostic to document meaning.
+
+---
+
+# 9. AI RESPONSIBILITY
+
+N/A - Background processing only executes the AI tasks; it does not understand them.
+
+---
+
+# 10. AI PROMPT RESPONSIBILITY
+
+N/A
+
+---
+
+# 11. RAG / KNOWLEDGE REQUIREMENTS
+
+N/A
+
+---
+
+# 12. BACKGROUND PROCESSING
+
+*(This entire document defines this section)*
+
+## 12.5 Idempotency
+
+* **CRITICAL RULE:** All Celery tasks must be idempotent. Because network failures can cause Redis to deliver a message twice ("at-least-once" delivery), running the same task twice must be perfectly safe and not cause data duplication.
+
+---
+
+# 13. DATABASE RESPONSIBILITY
+
+## 13.1 Owned Data
+
+* Celery uses Redis as a broker, but does not "own" business data.
+
+## 13.5 Database Rules
+
+* Celery workers MUST manage their own database connection pools properly, closing sessions after the task finishes to prevent connection leaks.
+
+---
+
+# 14. STORAGE REQUIREMENTS
+
+N/A
+
+---
+
+# 15. API CONTRACT
+
+## 15.1 API List
+
+| Method | Endpoint | Purpose |
+| ------ | -------- | ------- |
+| `GET`  | `/api/v1/tasks/{task_id}` | Allow frontend to poll task status |
+
+## 15.4 API Rules
+* The status API must return a standard response indicating if the task is `PENDING`, `STARTED`, `SUCCESS`, or `FAILURE`.
+
+---
+
+# 16. ERROR HANDLING
+
+## Error Rules
+
+* Workers must catch specific anticipated errors (like HTTP Timeouts to OpenAI) and retry.
+* Fatal errors (like corrupted files) should not be retried.
+
+---
+
+# 17. AUTHORIZATION & SECURITY
+
+## 17.1 Access Rules
+
+* The `/tasks/{task_id}` polling endpoint must still verify that the current user belongs to the workspace associated with that task. (Requires saving `workspace_id` in the task metadata).
+
+## 17.4 Security Rules
+
+* Redis must be secured within the private VPC. Port 6379 must NEVER be exposed to the public internet.
+
+---
+
+# 18. SOURCE & TRACEABILITY
+
+N/A
+
+---
+
+# 19. LEGAL SAFETY
+
+N/A
+
+---
+
+# 20. PERFORMANCE REQUIREMENTS
+
+## 20.1 Response Requirements
+
+* Celery tasks should begin executing within 100ms of being queued, assuming workers are available.
+
+## 20.2 Large Input Handling
+
+* Never pass a 50MB string as a Celery task argument. Pass the S3 URL or DB ID and let the worker fetch the data itself.
+
+## 20.3 Concurrent Usage
+
+* Deploy multiple Celery worker containers.
+* Configure `worker_concurrency` carefully based on the queue (e.g., OCR workers might use concurrency=2 to save RAM, while AI API workers might use concurrency=50 because they just wait for network I/O).
+
+## 20.4 Resource Limits
+N/A
+
+---
+
+# 21. FOLDER STRUCTURE
+
+## 21.1 Service Files
+
+| Area           | Location | Responsibility |
+| -------------- | -------- | -------------- |
+| Celery App     | `backend/app/worker/celery_app.py`| Main configuration |
+| Task Definitions | `backend/app/worker/tasks/` | Actual async functions |
+| API Route      | `backend/app/api/v1/tasks.py` | Polling endpoints |
+
+---
+
+# 22. SERVICE CONNECTIONS
+
+```text
+[FastAPI] ──► [Redis] ◄── [Celery Worker (OCR)]
+                     ◄── [Celery Worker (AI)]
+                     ◄── [Celery Worker (Default)]
+```
+
+---
+
+# 23. EVENTS
+
+N/A
+
+---
+
+# 24. LOGGING & AUDIT
+
+## 24.1 Application Logging
+
+* Celery workers must use the standard Python logger so logs are aggregated alongside FastAPI logs.
+* Log task start, task completion, and task duration.
+
+## 24.2 Audit Logging
+N/A
+
+## 24.3 Sensitive Data Rules
+
+* DO NOT log task arguments if they contain PII or legal text.
+
+---
+
+# 25. OBSERVABILITY
+
+## Metrics
+
+* Queue length (How many tasks are waiting).
+* Average processing time per queue type.
+* Retry rate.
+
+## Health
+
+* Celery provides `celery inspect ping` to ensure workers are alive.
+
+---
+
+# 26. TESTING REQUIREMENTS
+
+## 26.1 Unit Testing
+
+* Celery tasks must be tested synchronously by setting `CELERY_TASK_ALWAYS_EAGER = True` in the test configuration.
+
+## 26.2 Integration Testing
+N/A
+## 26.3 End-to-End Testing
+N/A
+## 26.4 AI Testing
+N/A
+## 26.5 Security Testing
+N/A
+
+---
+
+# 27. EDGE CASES
+
+| Case     | Expected Behavior |
+| -------- | ----------------- |
+| `Worker Crash (OOM)` | Redis detects the dropped connection; the task is sent back to the queue (Late Acknowledgement configured) and picked up by another worker. |
+
+---
+
+# 28. VERSIONING
+
+## Compatibility Rules
+
+* If a Celery task signature changes (adding/removing arguments), you must be careful deploying. A new FastAPI container might send a new signature to an old Celery worker container that hasn't restarted yet. Deploy workers *before* deploying the web API.
+
+---
+
+# 29. CONFIGURATION
+
+| Configuration | Purpose | Required | Default |
+| --- | --- | --- | --- |
+| `CELERY_BROKER_URL` | Redis URL | Yes | `redis://localhost:6379/0` |
+| `CELERY_RESULT_BACKEND` | Where to store task output | Yes | `redis://localhost:6379/1` |
+
+---
+
+# 30. DEPLOYMENT REQUIREMENTS
+
+## Runtime Requirements
+
+* Celery requires its own separate Docker containers running the `celery -A app.worker.celery_app worker` command.
+* Use Celery Flower for an admin dashboard to monitor queues in production.
+
+---
+
+# 31. ACCEPTANCE CRITERIA
+
+### Functional
+* [ ] FastAPI successfully queues a task without blocking the HTTP response.
+* [ ] Celery worker successfully pulls the task and executes it.
+* [ ] Frontend can poll `/tasks/{id}` and receive correct status updates.
+* [ ] Failing tasks automatically retry 3 times before failing permanently.
+
+---
+
+# 32. DEFINITION OF DONE
+
+The Background Processing Engine is **DONE** when the heavy OCR and Embedding tasks can run flawlessly in the background without affecting the response time of the main API.
+
+---
+
+# 33. IMPLEMENTATION RULES
+
+1. **Keep business logic inside the service responsible for it.**
+2. **Background processing must be safe to retry (Idempotent).**
+3. **Repeated requests must not create unintended duplicate data.**
+4. **Errors must be handled explicitly.**
+
+---
+
+# 34. SERVICE DEPENDENCY MAP
+
+N/A
+
+---
+
+# 35. FINAL SERVICE SUMMARY
+
+## What it does
+Provides the asynchronous engine required to handle heavy, slow tasks without freezing the application.
+
+## What the user sees
+N/A (Internal).
+
+## What happens in the background
+FastAPI drops a JSON message into Redis. A Celery worker picks it up, does the heavy lifting (OCR, AI calls), and updates the database when finished.
+
+## What it receives
+Task definitions and UUIDs.
+
+## What it produces
+Completed background tasks.
+
+## Success means
+The application can handle massive workloads smoothly and scales horizontally simply by adding more worker containers.
+
+---
+
+# 36. CHANGE HISTORY
+
+| Version | Date       | Change                | Author       |
+| ------- | ---------- | --------------------- | ------------ |
+| `1.0`   | `2026-09-05` | Initial specification | `Antigravity` |
