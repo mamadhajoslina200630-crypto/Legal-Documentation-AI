@@ -90,3 +90,35 @@ def register_predefined_answer(filename_pattern: str, option_key: str, answer_te
         return True
     except Exception:
         return False
+
+
+def process_demo_request(db: Session, document_id: str, action_key: str) -> Dict[str, Any]:
+    """Helper to fetch document filename, get predefined answer, and return strict API envelope."""
+    from app.data.postgres.models.document import Document
+    
+    if not db or not document_id:
+        return {"success": False, "error": "Invalid database session or document_id."}
+        
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        return {"success": False, "error": f"Document {document_id} not found."}
+        
+    predefined = get_predefined_answer(doc.filename, action_key)
+    
+    if predefined:
+        # Check if predefined is already a dict (complex JSON) or a string
+        if isinstance(predefined, str) and predefined.strip().startswith("{"):
+            try:
+                predefined = json.loads(predefined)
+            except Exception:
+                pass
+                
+        return {
+            "success": True, 
+            "data": predefined
+        }
+        
+    return {
+        "success": False, 
+        "error": f"This document ({doc.filename}) is not fully mapped for '{action_key}' in the Demo Version."
+    }

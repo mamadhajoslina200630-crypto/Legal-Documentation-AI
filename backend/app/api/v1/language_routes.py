@@ -24,21 +24,22 @@ class RegionalExplainRequest(BaseModel):
     target_language: str = "Hindi"
 
 
-@router.post("/translate")
-def translate(payload: TranslateRequest):
-    """Translate legal text into an Indian regional language."""
-    return translate_legal_text(
-        text=payload.text, source_lang=payload.source_lang, target_lang=payload.target_lang
-    )
+@router.get("/{document_id}/translate")
+def translate(document_id: str, db: Session = Depends(get_db)):
+    """Translate legal text into an Indian regional language (Mocked)."""
+    from app.services.demo_response_service import process_demo_request
+    return process_demo_request(db, document_id, "translate")
 
 
-@router.post("/simplify")
-def simplify(payload: SimplifyRequest):
-    """Rewrite complex legal provisions in plain language."""
-    return simplify_legal_text(clause_text=payload.clause_text)
+@router.get("/{document_id}/simplify")
+def simplify(document_id: str, db: Session = Depends(get_db)):
+    """Rewrite complex legal provisions in plain language (Mocked)."""
+    from app.services.demo_response_service import process_demo_request
+    return process_demo_request(db, document_id, "simplify")
 
 
-@router.post("/regional-explain")
-def regional_explain(payload: RegionalExplainRequest):
-    """Explain legal implications in selected Indian language."""
-    return explain_in_regional_language(text=payload.text, target_language=payload.target_language)
+@router.get("/{document_id}/voice")
+def regional_explain(document_id: str, db: Session = Depends(get_db)):
+    """Explain legal implications via Voice Assistant mapping (Mocked)."""
+    from app.services.demo_response_service import process_demo_request
+    return process_demo_request(db, document_id, "voice")

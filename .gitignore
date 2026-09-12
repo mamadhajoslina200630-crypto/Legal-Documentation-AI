@@ -43,6 +43,8 @@ storage_data/
 dist/
 frontend/dist/
 
+push_to_github.bat
+
 # OS / Editor artifacts
 .DS_Store
 Thumbs.db
