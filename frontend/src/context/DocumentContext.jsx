@@ -97,6 +97,12 @@ export function DocumentProvider({ children }) {
   const [selectedLanguage, setSelectedLanguage] = useState("en"); // 'en' | 'ta' (English & Tamil only)
   const [lastAssistantAnswer, setLastAssistantAnswer] = useState(""); // For TTS in typing section
   const [conversations, setConversations] = useState([]);
+  const [activeNavSection, setActiveNavSection] = useState("case_workspace"); // 'overview' | 'documents' | 'ai_analysis' | 'case_workspace' | 'clause_intelligence' | 'risk_detection' | 'citations' | 'reports' | 'settings'
+  const [redlineMode, setRedlineMode] = useState("flagged"); // 'original' | 'flagged' | 'review'
+  const [caseId, setCaseId] = useState("CASE #LD-2048");
+  const [aiConfidence, setAiConfidence] = useState("94.7%");
+  const [securityStatus, setSecurityStatus] = useState("ENCRYPTED");
+  const [lastAnalyzed, setLastAnalyzed] = useState("2026-09-12 17:35 UTC");
 
   // Fetch conversations history
   const fetchConversations = () => {
@@ -129,6 +135,18 @@ export function DocumentProvider({ children }) {
         conversations,
         setConversations,
         fetchConversations,
+        activeNavSection,
+        setActiveNavSection,
+        redlineMode,
+        setRedlineMode,
+        caseId,
+        setCaseId,
+        aiConfidence,
+        setAiConfidence,
+        securityStatus,
+        setSecurityStatus,
+        lastAnalyzed,
+        setLastAnalyzed,
       }}
     >
       {children}

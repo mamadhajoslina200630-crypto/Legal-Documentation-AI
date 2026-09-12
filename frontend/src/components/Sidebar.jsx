@@ -1,147 +1,184 @@
 import React, { useState } from "react";
 import {
-  MessageSquare,
+  LayoutDashboard,
+  Files,
+  Cpu,
+  Terminal,
+  Binary,
+  ShieldAlert,
+  Highlighter,
+  FileBarChart,
+  Sliders,
   Plus,
-  Trash2,
-  Scale,
   PanelLeftClose,
   PanelLeft,
-  User,
-  Clock
+  Lock,
+  Radio,
+  FileText
 } from "lucide-react";
-import api from "../api/client";
 import { useDocumentContext } from "../context/DocumentContext";
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const {
+    activeNavSection,
+    setActiveNavSection,
+    activeDocument,
     setActiveDocument,
-    setActiveCitation,
     setIsDocViewerOpen,
-    conversations,
-    setConversations,
     selectedLanguage
   } = useDocumentContext();
 
-  const handleNewChat = () => {
+  const isTamil = selectedLanguage === "ta";
+
+  const NAV_ITEMS = [
+    { id: "overview", labelEn: "Overview", labelTa: "கண்ணோட்டம்", icon: LayoutDashboard },
+    { id: "documents", labelEn: "Documents", labelTa: "ஆவணங்கள்", icon: Files },
+    { id: "ai_analysis", labelEn: "AI Analysis", labelTa: "AI பகுப்பாய்வு", icon: Cpu },
+    { id: "case_workspace", labelEn: "Case Workspace", labelTa: "வழக்கு பணிமனை", icon: Terminal },
+    { id: "clause_intelligence", labelEn: "Clause Intelligence", labelTa: "விதிமுறைகள் நுண்ணறிவு", icon: Binary },
+    { id: "risk_detection", labelEn: "Risk Detection", labelTa: "அபாய வரைபடம் (Threat Map)", icon: ShieldAlert },
+    { id: "citations", labelEn: "Citations", labelTa: "சான்றுகள்", icon: Highlighter },
+    { id: "reports", labelEn: "Reports", labelTa: "அறிக்கைகள்", icon: FileBarChart },
+    { id: "settings", labelEn: "Settings", labelTa: "அமைப்புகள்", icon: Sliders },
+  ];
+
+  const handleNewCase = () => {
     setActiveDocument(null);
-    setActiveCitation(null);
     setIsDocViewerOpen(false);
+    setActiveNavSection("case_workspace");
     window.dispatchEvent(new CustomEvent("start-new-chat"));
-  };
-
-  const handleDeleteConversation = async (e, convId) => {
-    e.stopPropagation();
-    try {
-      await api.delete(`/chat/conversations/${convId}`);
-      setConversations((prev) => prev.filter((c) => c.id !== convId));
-    } catch (err) {
-      setConversations((prev) => prev.filter((c) => c.id !== convId));
-    }
-  };
-
-  const handleSelectConversation = (conv) => {
-    window.dispatchEvent(new CustomEvent("load-conversation", { detail: conv }));
   };
 
   if (isCollapsed) {
     return (
-      <aside className="chatgpt-sidebar-collapsed">
+      <aside className="forensic-sidebar-collapsed">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="sidebar-icon-toggle-btn"
-          title="Expand sidebar"
+          className="btn-sidebar-collapse font-mono-tech"
+          title="Expand Command Navigation"
         >
-          <PanelLeft size={18} />
+          <PanelLeft size={16} />
         </button>
+
         <button
-          onClick={handleNewChat}
-          className="sidebar-icon-toggle-btn"
-          title="New Chat"
+          onClick={handleNewCase}
+          className="btn-new-case-mini"
+          title="New Case Dossier"
         >
-          <Plus size={18} />
+          <Plus size={16} />
         </button>
+
+        <div className="collapsed-nav-icons">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNavSection === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveNavSection(item.id)}
+                className={`collapsed-nav-btn ${isActive ? "active" : ""}`}
+                title={isTamil ? item.labelTa : item.labelEn}
+              >
+                <Icon size={16} />
+              </button>
+            );
+          })}
+        </div>
       </aside>
     );
   }
 
   return (
-    <aside id="chatgpt-sidebar" className="chatgpt-sidebar-expanded">
-      {/* Brand Header */}
-      <div className="sidebar-brand-header">
-        <div className="sidebar-brand-title">
-          <div className="sidebar-logo-icon">
-            <Scale size={16} color="#ffffff" />
+    <aside id="forensic-sidebar" className="forensic-sidebar-expanded">
+      {/* Brand & System Identifier */}
+      <div className="sidebar-forensic-header">
+        <div className="brand-lockup">
+          <div className="brand-dot-crimson"></div>
+          <div className="brand-title font-mono-tech">
+            LEGAL<span className="text-crimson font-bold">INTEL</span>
           </div>
-          <span className="brand-text">Legal<span className="brand-gradient-txt">AI</span></span>
+          <span className="brand-sub-tag font-mono-tech">[ v2.6 // PRO ]</span>
         </div>
+
         <button
           onClick={() => setIsCollapsed(true)}
-          className="sidebar-collapse-btn"
-          title="Collapse sidebar"
+          className="btn-sidebar-collapse"
+          title="Collapse"
         >
-          <PanelLeftClose size={17} />
+          <PanelLeftClose size={15} />
         </button>
       </div>
 
-      {/* New Chat Button */}
-      <div className="sidebar-new-chat-container">
+      {/* Primary Action: + NEW CASE DOSSIER */}
+      <div className="sidebar-action-wrap">
         <button
-          id="btn-new-chat-sidebar"
-          onClick={handleNewChat}
-          className="sidebar-new-chat-btn"
+          onClick={handleNewCase}
+          className="btn-new-case font-mono-tech"
         >
-          <Plus size={16} color="#3B82F6" />
-          <span>{selectedLanguage === "ta" ? "புதிய உரையாடல்" : "New Chat"}</span>
+          <Plus size={14} color="#E50914" />
+          <span>{isTamil ? "+ புதிய வழக்கு" : "+ ANALYZE NEW DOCUMENT"}</span>
         </button>
       </div>
 
-      {/* Chat History Memories */}
-      <div className="sidebar-scrollable-body">
-        <div className="sidebar-section-heading">
-          <Clock size={12} />
-          <span>{selectedLanguage === "ta" ? "முந்தைய உரையாடல்கள்" : "Chat History"}</span>
+      {/* Primary Technical Navigation List */}
+      <div className="sidebar-nav-scroller">
+        <div className="sidebar-group-label font-mono-tech">
+          // SYSTEM NAVIGATION
         </div>
 
-        <div className="sidebar-conversations-list">
-          {conversations.length === 0 ? (
-            <div className="sidebar-empty-chat-hint">
-              {selectedLanguage === "ta"
-                ? "சேமிக்கப்பட்ட உரையாடல்கள் இல்லை. ஆவணத்தை பதிவேற்றி தொடங்கவும்."
-                : "No chat history yet. Upload a document to begin."}
-            </div>
-          ) : (
-            conversations.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => handleSelectConversation(c)}
-                className="sidebar-conv-item"
+        <nav className="forensic-nav-list">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNavSection === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveNavSection(item.id)}
+                className={`forensic-nav-item ${isActive ? "active" : ""}`}
               >
-                <MessageSquare size={13} color="var(--text-secondary)" />
-                <span className="conv-title">{c.title || "Legal Consultation"}</span>
-                <button
-                  className="conv-del-btn"
-                  onClick={(e) => handleDeleteConversation(e, c.id)}
-                  title="Delete memory"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
+                <div className="nav-item-left">
+                  <Icon size={15} className="nav-icon" />
+                  <span className="nav-label">{isTamil ? item.labelTa : item.labelEn}</span>
+                </div>
+                {isActive && <div className="nav-active-pip" />}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Active Document Mini Metadata Strip */}
+        {activeDocument && (
+          <div className="sidebar-doc-card">
+            <div className="doc-card-title-row font-mono-tech">
+              <FileText size={12} color="#E50914" />
+              <span>ACTIVE DOSSIER</span>
+            </div>
+            <div className="sidebar-doc-name" title={activeDocument.filename}>
+              {activeDocument.filename}
+            </div>
+            <div className="sidebar-doc-meta font-mono-tech">
+              <span>{activeDocument.totalPages || 14} PAGES</span>
+              <span>·</span>
+              <span className="text-crimson">INDEXED</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Bottom Profile */}
-      <div className="sidebar-footer-profile">
-        <div className="user-avatar-circle">
-          <User size={15} color="#ffffff" />
-        </div>
-        <div className="user-text-info">
-          <div className="user-name-title">Advocate / Legal Counsel</div>
-          <div className="user-tier-badge">
-            <span className="tier-dot"></span> Legal AI Pro
+      {/* Forensic Footer / Encryption Status */}
+      <div className="sidebar-forensic-footer font-mono-tech">
+        <div className="footer-status-row">
+          <div className="pulse-beacon-container">
+            <span className="beacon-pip red-beacon"></span>
+            <span className="text-muted">SESSION STATUS:</span>
           </div>
+          <span className="text-crimson">SECURE</span>
+        </div>
+        <div className="footer-crypto-text">
+          <span>AES-256 GCM</span>
+          <span>·</span>
+          <span>AIR-GAPPED AUDIT</span>
         </div>
       </div>
     </aside>
