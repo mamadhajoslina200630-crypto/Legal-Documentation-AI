@@ -49,7 +49,7 @@ export function Sidebar() {
 
   const handleNewChat = () => {
     setActiveDocument(SAMPLE_DOCUMENTS[0]);
-    navigate("/");
+    navigate("/app");
     window.dispatchEvent(new CustomEvent("start-new-chat"));
   };
 
@@ -64,14 +64,14 @@ export function Sidebar() {
   };
 
   const handleSelectConversation = (conv) => {
-    navigate("/");
+    navigate("/app");
     window.dispatchEvent(new CustomEvent("load-conversation", { detail: conv }));
   };
 
   const handleSelectDocument = (doc) => {
     setActiveDocument(doc);
     setViewMode("split");
-    navigate("/");
+    navigate("/app");
   };
 
   if (isCollapsed) {

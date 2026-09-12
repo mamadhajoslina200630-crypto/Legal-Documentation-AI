@@ -1,18 +1,24 @@
 import React from "react";
-import { ChevronDown, Sparkles, Scale, Split, MessageSquare, FileText, Globe } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronDown, Sparkles, Scale, Split, MessageSquare, FileText, ArrowLeft } from "lucide-react";
 import { useDocumentContext } from "../context/DocumentContext";
 
 export function Header() {
-  const { activeDocument, viewMode, setViewMode, selectedLanguage, setSelectedLanguage } = useDocumentContext();
+  const { activeDocument, viewMode, setViewMode } = useDocumentContext();
 
   return (
     <header id="main-header" className="legal-app-header">
-      {/* Left: Model & Workspace Status */}
+      {/* Left: Home Return + Model & Workspace Status */}
       <div className="header-left-group">
+        <Link to="/" className="header-home-btn" title="Return to Landing Page">
+          <ArrowLeft size={14} />
+          <span>Home</span>
+        </Link>
+
         <div className="model-brand-badge">
-          <Scale size={14} color="#10a37f" />
+          <Scale size={14} color="#3B82F6" />
           <span>Legal AI 2.0</span>
-          <span className="model-engine-tag">Indian Law RAG + Gemini</span>
+          <span className="model-engine-tag">Hybrid RAG + Gemini 2.5 Pro</span>
         </div>
 
         {activeDocument && (
@@ -58,7 +64,7 @@ export function Header() {
 
         {/* Indian Legal System Status */}
         <div className="jurisdiction-status-pill">
-          <span className="green-live-light"></span>
+          <span className="cyan-live-light"></span>
           <span>Indian Legal Jurisdiction</span>
         </div>
       </div>
