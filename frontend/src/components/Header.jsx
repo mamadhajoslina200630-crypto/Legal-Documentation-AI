@@ -1,29 +1,30 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { ChevronDown, Sparkles, Scale, Split, MessageSquare, FileText, ArrowLeft } from "lucide-react";
+import { Scale, FileText, Split, Sparkles, Check, Globe } from "lucide-react";
 import { useDocumentContext } from "../context/DocumentContext";
 
 export function Header() {
-  const { activeDocument, viewMode, setViewMode } = useDocumentContext();
+  const {
+    activeDocument,
+    isDocViewerOpen,
+    setIsDocViewerOpen,
+    selectedLanguage,
+    setSelectedLanguage,
+  } = useDocumentContext();
 
   return (
     <header id="main-header" className="legal-app-header">
-      {/* Left: Home Return + Model & Workspace Status */}
+      {/* Brand & Document Chip */}
       <div className="header-left-group">
-        <Link to="/" className="header-home-btn" title="Return to Landing Page">
-          <ArrowLeft size={14} />
-          <span>Home</span>
-        </Link>
-
-        <div className="model-brand-badge">
-          <Scale size={14} color="#3B82F6" />
-          <span>Legal AI 2.0</span>
-          <span className="model-engine-tag">Hybrid RAG + Gemini 2.5 Pro</span>
+        <div className="header-brand-badge">
+          <div className="header-brand-icon">
+            <Scale size={15} color="#ffffff" />
+          </div>
+          <span className="header-brand-title">Legal<span className="brand-gradient-txt">AI</span></span>
         </div>
 
         {activeDocument && (
           <div className="header-active-doc-pill">
-            <span className="doc-pill-icon">📄</span>
+            <FileText size={13} color="#3B82F6" />
             <span className="doc-pill-name">{activeDocument.filename}</span>
             <span className="doc-pill-pages">
               {activeDocument.totalPages || 14} pgs
@@ -32,40 +33,34 @@ export function Header() {
         )}
       </div>
 
-      {/* Right: Layout Switcher & Indian Jurisdiction Badge */}
+      {/* Right Controls: Split Screen Toggle (Only when doc is active) + Language */}
       <div className="header-right-group">
-        {/* 3-Zone Layout Controller */}
-        <div className="layout-switcher-pill">
+        {/* Split Screen Toggle Button - only appears when a doc is active */}
+        {activeDocument && (
           <button
-            onClick={() => setViewMode("split")}
-            className={`layout-pill-btn ${viewMode === "split" ? "active" : ""}`}
-            title="Split: Document Viewer + Conversational AI"
+            onClick={() => setIsDocViewerOpen(!isDocViewerOpen)}
+            className={`btn-split-toggle ${isDocViewerOpen ? "active" : ""}`}
+            title={isDocViewerOpen ? "Close document preview" : "View original document side-by-side"}
           >
-            <Split size={13} />
-            <span>Split</span>
+            <Split size={14} />
+            <span>{isDocViewerOpen ? (selectedLanguage === "ta" ? "ஆவணத்தை மூடு" : "Close Split") : (selectedLanguage === "ta" ? "ஆவணத்தைப் பார்" : "View Document")}</span>
           </button>
-          <button
-            onClick={() => setViewMode("chat-only")}
-            className={`layout-pill-btn ${viewMode === "chat-only" ? "active" : ""}`}
-            title="Conversational AI Chat"
-          >
-            <MessageSquare size={13} />
-            <span>Chat</span>
-          </button>
-          <button
-            onClick={() => setViewMode("doc-only")}
-            className={`layout-pill-btn ${viewMode === "doc-only" ? "active" : ""}`}
-            title="Document Viewer Fullscreen"
-          >
-            <FileText size={13} />
-            <span>Document</span>
-          </button>
-        </div>
+        )}
 
-        {/* Indian Legal System Status */}
-        <div className="jurisdiction-status-pill">
-          <span className="cyan-live-light"></span>
-          <span>Indian Legal Jurisdiction</span>
+        {/* Language Switcher: English and தமிழ் */}
+        <div className="lang-switcher-pill">
+          <button
+            onClick={() => setSelectedLanguage("en")}
+            className={`lang-btn ${selectedLanguage === "en" ? "active" : ""}`}
+          >
+            English
+          </button>
+          <button
+            onClick={() => setSelectedLanguage("ta")}
+            className={`lang-btn ${selectedLanguage === "ta" ? "active" : ""}`}
+          >
+            தமிழ்
+          </button>
         </div>
       </div>
     </header>

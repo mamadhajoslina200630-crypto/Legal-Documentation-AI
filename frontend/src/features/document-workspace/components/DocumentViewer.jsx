@@ -6,14 +6,9 @@ import {
   ZoomIn,
   ZoomOut,
   Search,
-  Maximize2,
-  Minimize2,
-  ExternalLink,
-  Highlighter,
-  CheckCircle2,
   Scale,
   Sparkles,
-  BookOpen,
+  Highlighter,
   X
 } from "lucide-react";
 import { useDocumentContext, SAMPLE_DOCUMENTS } from "../../../context/DocumentContext";
@@ -21,11 +16,10 @@ import { useDocumentContext, SAMPLE_DOCUMENTS } from "../../../context/DocumentC
 export function DocumentViewer() {
   const {
     activeDocument,
-    setActiveDocument,
     activeCitation,
     setActiveCitation,
-    viewMode,
-    setViewMode,
+    setIsDocViewerOpen,
+    selectedLanguage
   } = useDocumentContext();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,43 +56,13 @@ export function DocumentViewer() {
     }
   }, [highlightedClause]);
 
-  if (!activeDocument) {
-    return (
-      <div className="doc-viewer-empty-state">
-        <div className="doc-empty-icon-ring">
-          <FileText size={32} color="#10a37f" />
-        </div>
-        <h3>No Document Selected</h3>
-        <p>Select or upload a contract, lease, or court order to view page evidence and original text.</p>
-        <div className="doc-sample-pills">
-          <span className="doc-sample-label">Or test with demo documents:</span>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
-            {SAMPLE_DOCUMENTS.map((doc) => (
-              <button
-                key={doc.id}
-                onClick={() => setActiveDocument(doc)}
-                className="doc-sample-btn"
-              >
-                <Scale size={13} />
-                <span>{doc.filename}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!activeDocument) return null;
 
   const pages = activeDocument.pages || SAMPLE_DOCUMENTS[0].pages;
   const totalPages = activeDocument.totalPages || pages.length;
 
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-  };
+  const handlePrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
+  const handleNextPage = () => setCurrentPage((p) => Math.min(totalPages, p + 1));
 
   const handleZoomIn = () => setZoomLevel((z) => Math.min(150, z + 10));
   const handleZoomOut = () => setZoomLevel((z) => Math.max(70, z - 10));
@@ -109,8 +73,8 @@ export function DocumentViewer() {
       <div className="doc-viewer-toolbar">
         <div className="doc-title-group">
           <div className="doc-badge-type">
-            <Scale size={13} color="#10a37f" />
-            <span>{activeDocument.docType || "Legal Document"}</span>
+            <Scale size={13} color="#3B82F6" />
+            <span>{activeDocument.docType || "Document"}</span>
           </div>
           <span className="doc-filename-display" title={activeDocument.filename}>
             {activeDocument.filename}
@@ -118,23 +82,7 @@ export function DocumentViewer() {
         </div>
 
         <div className="doc-toolbar-controls">
-          {/* Search inside Document */}
-          <div className="doc-search-box">
-            <Search size={13} color="var(--text-muted)" />
-            <input
-              type="text"
-              placeholder="Find in document..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="doc-search-clear">
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* Page Selector */}
+          {/* Page Stepper */}
           <div className="doc-page-stepper">
             <button
               onClick={handlePrevPage}
@@ -142,10 +90,10 @@ export function DocumentViewer() {
               className="doc-nav-btn"
               title="Previous Page"
             >
-              <ChevronLeft size={15} />
+              <ChevronLeft size={14} />
             </button>
             <span className="doc-page-counter">
-              Page <strong>{currentPage}</strong> of {totalPages}
+              {currentPage} / {totalPages}
             </span>
             <button
               onClick={handleNextPage}
@@ -153,52 +101,53 @@ export function DocumentViewer() {
               className="doc-nav-btn"
               title="Next Page"
             >
-              <ChevronRight size={15} />
+              <ChevronRight size={14} />
             </button>
           </div>
 
-          {/* Zoom controls */}
+          {/* Zoom */}
           <div className="doc-zoom-stepper">
             <button onClick={handleZoomOut} className="doc-nav-btn" title="Zoom Out">
-              <ZoomOut size={14} />
+              <ZoomOut size={13} />
             </button>
             <span className="doc-zoom-label">{zoomLevel}%</span>
             <button onClick={handleZoomIn} className="doc-nav-btn" title="Zoom In">
-              <ZoomIn size={14} />
+              <ZoomIn size={13} />
             </button>
           </div>
 
-          {/* View Mode Toggle */}
+          {/* Close Document Viewer Button */}
           <button
-            onClick={() => setViewMode(viewMode === "doc-only" ? "split" : "doc-only")}
-            className="doc-nav-btn"
-            title={viewMode === "doc-only" ? "Restore Split View" : "Maximize Document"}
+            onClick={() => setIsDocViewerOpen(false)}
+            className="doc-close-split-btn"
+            title="Close Split View"
           >
-            {viewMode === "doc-only" ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            <X size={15} />
+            <span>{selectedLanguage === "ta" ? "மூடு" : "Close"}</span>
           </button>
         </div>
       </div>
 
-      {/* Active Citation Notification Banner */}
+      {/* Floating Citation Alert Banner */}
       {activeCitation && (
         <div className="citation-floating-alert">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Highlighter size={14} color="#f59e0b" />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+            <Highlighter size={13} color="#ffffff" />
             <span>
-              Citing <strong>Page {activeCitation.page}</strong>
+              {selectedLanguage === "ta" ? "சுட்டிக்காட்டப்பட்ட பக்கம்:" : "Cited Evidence:"} <strong>Page {activeCitation.page}</strong>
               {activeCitation.clauseNumber ? ` · Clause ${activeCitation.clauseNumber}` : ""}
             </span>
           </div>
           <button
             onClick={() => setActiveCitation(null)}
-            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}
+            style={{ background: "none", border: "none", color: "#ffffff", cursor: "pointer", display: "flex" }}
           >
-            <X size={12} />
+            <X size={13} />
           </button>
         </div>
       )}
 
-      {/* Document Pages Canvas */}
+      {/* Document Pages Scroll Area */}
       <div className="doc-canvas-scroll-area">
         <div
           className="doc-canvas-content"
@@ -213,42 +162,30 @@ export function DocumentViewer() {
                 ref={(el) => (pageRefs.current[page.pageNumber] = el)}
                 className={`legal-parchment-sheet ${isTargetPage ? "active-page-sheet" : ""}`}
               >
-                {/* Official Page Header */}
+                {/* Header */}
                 <div className="parchment-header">
-                  <div className="parchment-jurisdiction">
-                    {activeDocument.jurisdiction || "LEGAL DOCUMENT INTELLIGENCE"}
-                  </div>
-                  <div className="parchment-page-num">
-                    Page {page.pageNumber} of {totalPages}
-                  </div>
+                  <span>{activeDocument.jurisdiction || "LEGAL DOCUMENT INTELLIGENCE"}</span>
+                  <span>Page {page.pageNumber} of {totalPages}</span>
                 </div>
 
                 <div className="parchment-divider"></div>
 
-                {/* Page Title */}
-                {page.title && (
-                  <h4 className="parchment-section-title">
-                    {page.title}
-                  </h4>
-                )}
+                {page.title && <h4 className="parchment-section-title">{page.title}</h4>}
 
-                {/* Legal Text Content */}
+                {/* Content */}
                 <div className="parchment-text-body">
                   {page.content.split("\n\n").map((para, pIdx) => (
-                    <p key={pIdx} className="parchment-paragraph">
-                      {para}
-                    </p>
+                    <p key={pIdx} className="parchment-paragraph">{para}</p>
                   ))}
                 </div>
 
-                {/* Structured Clauses with Citation Anchors */}
+                {/* Clauses */}
                 {page.clauses && page.clauses.length > 0 && (
                   <div className="parchment-clauses-wrapper">
                     {page.clauses.map((clause) => {
                       const isHighlighted =
                         highlightedClause === clause.id ||
-                        (activeCitation && activeCitation.clauseId === clause.id) ||
-                        (activeCitation && activeCitation.page === page.pageNumber && !activeCitation.clauseId);
+                        (activeCitation && activeCitation.clauseId === clause.id);
 
                       return (
                         <div
@@ -273,9 +210,8 @@ export function DocumentViewer() {
                   </div>
                 )}
 
-                {/* Page Footer Watermark */}
                 <div className="parchment-footer">
-                  <span>CONFIDENTIAL & LEGAL PRIVILEGE</span>
+                  <span>CONFIDENTIAL</span>
                   <span>{activeDocument.filename}</span>
                 </div>
               </div>

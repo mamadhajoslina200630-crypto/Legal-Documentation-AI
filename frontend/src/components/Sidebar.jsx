@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from "react";
 import {
   MessageSquare,
   Plus,
@@ -7,49 +6,27 @@ import {
   Scale,
   PanelLeftClose,
   PanelLeft,
-  FileText,
-  GitCompare,
-  Edit3,
   User,
-  BookOpen,
-  FolderOpen,
-  Sparkles,
-  Gavel
+  Clock
 } from "lucide-react";
 import api from "../api/client";
-import { useDocumentContext, SAMPLE_DOCUMENTS } from "../context/DocumentContext";
+import { useDocumentContext } from "../context/DocumentContext";
 
 export function Sidebar() {
-  const [conversations, setConversations] = useState([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const {
-    activeDocument,
     setActiveDocument,
-    documentsList,
-    setDocumentsList,
-    setViewMode
+    setActiveCitation,
+    setIsDocViewerOpen,
+    conversations,
+    setConversations,
+    selectedLanguage
   } = useDocumentContext();
 
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const fetchConversations = () => {
-    api.get("/chat/conversations")
-      .then((data) => {
-        if (Array.isArray(data)) setConversations(data);
-      })
-      .catch(() => {});
-  };
-
-  useEffect(() => {
-    fetchConversations();
-    window.addEventListener("conversations-updated", fetchConversations);
-    return () => window.removeEventListener("conversations-updated", fetchConversations);
-  }, []);
-
   const handleNewChat = () => {
-    setActiveDocument(SAMPLE_DOCUMENTS[0]);
-    navigate("/app");
+    setActiveDocument(null);
+    setActiveCitation(null);
+    setIsDocViewerOpen(false);
     window.dispatchEvent(new CustomEvent("start-new-chat"));
   };
 
@@ -59,19 +36,12 @@ export function Sidebar() {
       await api.delete(`/chat/conversations/${convId}`);
       setConversations((prev) => prev.filter((c) => c.id !== convId));
     } catch (err) {
-      console.error("Delete conversation failed:", err);
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
     }
   };
 
   const handleSelectConversation = (conv) => {
-    navigate("/app");
     window.dispatchEvent(new CustomEvent("load-conversation", { detail: conv }));
-  };
-
-  const handleSelectDocument = (doc) => {
-    setActiveDocument(doc);
-    setViewMode("split");
-    navigate("/app");
   };
 
   if (isCollapsed) {
@@ -87,16 +57,9 @@ export function Sidebar() {
         <button
           onClick={handleNewChat}
           className="sidebar-icon-toggle-btn"
-          title="New chat / workspace"
+          title="New Chat"
         >
           <Plus size={18} />
-        </button>
-        <button
-          onClick={() => setActiveDocument(SAMPLE_DOCUMENTS[0])}
-          className="sidebar-icon-toggle-btn"
-          title="Open Contract"
-        >
-          <FileText size={18} />
         </button>
       </aside>
     );
@@ -110,8 +73,7 @@ export function Sidebar() {
           <div className="sidebar-logo-icon">
             <Scale size={16} color="#ffffff" />
           </div>
-          <span className="brand-text">Legal AI</span>
-          <span className="brand-version-badge">v2.0</span>
+          <span className="brand-text">Legal<span className="brand-gradient-txt">AI</span></span>
         </div>
         <button
           onClick={() => setIsCollapsed(true)}
@@ -122,64 +84,31 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* New Workspace / Chat Button */}
+      {/* New Chat Button */}
       <div className="sidebar-new-chat-container">
         <button
           id="btn-new-chat-sidebar"
           onClick={handleNewChat}
           className="sidebar-new-chat-btn"
         >
-          <Plus size={16} color="#10a37f" />
-          <span>New Workspace</span>
+          <Plus size={16} color="#3B82F6" />
+          <span>{selectedLanguage === "ta" ? "புதிய உரையாடல்" : "New Chat"}</span>
         </button>
       </div>
 
-      {/* Main Sidebar Scroll Area */}
+      {/* Chat History Memories */}
       <div className="sidebar-scrollable-body">
-        {/* DOCUMENTS SECTION (as mandated by ui_look.md) */}
         <div className="sidebar-section-heading">
-          <FolderOpen size={12} />
-          <span>Documents</span>
-        </div>
-
-        <div className="sidebar-documents-list">
-          {documentsList.map((doc) => {
-            const isActive = activeDocument?.id === doc.id;
-            const isJudgment = doc.docType?.toLowerCase().includes("judgment") ||
-              doc.filename.toLowerCase().includes("judgment");
-
-            return (
-              <div
-                key={doc.id}
-                onClick={() => handleSelectDocument(doc)}
-                className={`sidebar-doc-item ${isActive ? "active" : ""}`}
-                title={doc.filename}
-              >
-                <div className="sidebar-doc-icon">
-                  {isJudgment ? <Gavel size={14} color="#f59e0b" /> : <FileText size={14} color="#10a37f" />}
-                </div>
-                <div className="sidebar-doc-info">
-                  <span className="doc-name">{doc.filename}</span>
-                  <span className="doc-meta-sub">
-                    {doc.totalPages || 14} pgs · {isJudgment ? "Judgment" : "Agreement"}
-                  </span>
-                </div>
-                {isActive && <span className="doc-active-indicator"></span>}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* WORKSPACES & HISTORY SECTION */}
-        <div className="sidebar-section-heading" style={{ marginTop: "1.25rem" }}>
-          <MessageSquare size={12} />
-          <span>History & Chats</span>
+          <Clock size={12} />
+          <span>{selectedLanguage === "ta" ? "முந்தைய உரையாடல்கள்" : "Chat History"}</span>
         </div>
 
         <div className="sidebar-conversations-list">
           {conversations.length === 0 ? (
             <div className="sidebar-empty-chat-hint">
-              Active workspace ready. Upload or select a document to begin.
+              {selectedLanguage === "ta"
+                ? "சேமிக்கப்பட்ட உரையாடல்கள் இல்லை. ஆவணத்தை பதிவேற்றி தொடங்கவும்."
+                : "No chat history yet. Upload a document to begin."}
             </div>
           ) : (
             conversations.map((c) => (
@@ -189,11 +118,11 @@ export function Sidebar() {
                 className="sidebar-conv-item"
               >
                 <MessageSquare size={13} color="var(--text-secondary)" />
-                <span className="conv-title">{c.title || "Document Analysis"}</span>
+                <span className="conv-title">{c.title || "Legal Consultation"}</span>
                 <button
                   className="conv-del-btn"
                   onClick={(e) => handleDeleteConversation(e, c.id)}
-                  title="Delete chat"
+                  title="Delete memory"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -201,34 +130,9 @@ export function Sidebar() {
             ))
           )}
         </div>
-
-        {/* SECONDARY LEGAL TOOLS (Redline, Compare, Draft) */}
-        <div className="sidebar-section-heading" style={{ marginTop: "1.25rem" }}>
-          <span>Additional Tools</span>
-        </div>
-        <div className="sidebar-links-list">
-          <Link
-            to="/document"
-            className={`sidebar-nav-link ${location.pathname === "/document" ? "active" : ""}`}
-          >
-            <BookOpen size={14} /> Tabs Breakdown
-          </Link>
-          <Link
-            to="/compare"
-            className={`sidebar-nav-link ${location.pathname === "/compare" ? "active" : ""}`}
-          >
-            <GitCompare size={14} /> Redline Compare
-          </Link>
-          <Link
-            to="/draft"
-            className={`sidebar-nav-link ${location.pathname === "/draft" ? "active" : ""}`}
-          >
-            <Edit3 size={14} /> Clause Drafter
-          </Link>
-        </div>
       </div>
 
-      {/* Bottom User Profile */}
+      {/* Bottom Profile */}
       <div className="sidebar-footer-profile">
         <div className="user-avatar-circle">
           <User size={15} color="#ffffff" />
@@ -236,7 +140,7 @@ export function Sidebar() {
         <div className="user-text-info">
           <div className="user-name-title">Advocate / Legal Counsel</div>
           <div className="user-tier-badge">
-            <span className="tier-dot"></span> Indian Legal Intelligence Pro
+            <span className="tier-dot"></span> Legal AI Pro
           </div>
         </div>
       </div>
