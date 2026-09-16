@@ -1,188 +1,209 @@
 import React, { useState } from "react";
 import {
-  LayoutDashboard,
-  Files,
-  Cpu,
-  Terminal,
-  Binary,
-  ShieldAlert,
-  Highlighter,
-  FileBarChart,
-  Sliders,
   Plus,
-  PanelLeftClose,
-  PanelLeft,
-  Lock,
-  Radio,
-  FileText
+  Search,
+  MessageSquare,
+  Trash2,
+  Settings,
+  User,
+  Scale,
+  X,
+  FileText,
+  Gavel,
+  FolderClosed
 } from "lucide-react";
 import { useDocumentContext } from "../context/DocumentContext";
+import { translations } from "../context/translations";
+import LanguageSwitcher from "./LanguageSwitcher";
 
-export function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export default function Sidebar() {
   const {
-    activeNavSection,
-    setActiveNavSection,
-    activeDocument,
-    setActiveDocument,
-    setIsDocViewerOpen,
-    selectedLanguage
+    conversations,
+    activeConversation,
+    activeConversationId,
+    selectConversation,
+    createNewChat,
+    openDocument,
+    deleteConversation,
+    language,
+    setIsSettingsOpen,
+    setIsProfileOpen,
+    isMobileSidebarOpen,
+    setIsMobileSidebarOpen,
+    SAMPLE_DOCUMENTS
   } = useDocumentContext();
 
-  const isTamil = selectedLanguage === "ta";
+  const t = translations[language] || translations.en;
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const NAV_ITEMS = [
-    { id: "overview", labelEn: "Overview", labelTa: "கண்ணோட்டம்", icon: LayoutDashboard },
-    { id: "documents", labelEn: "Documents", labelTa: "ஆவணங்கள்", icon: Files },
-    { id: "ai_analysis", labelEn: "AI Analysis", labelTa: "AI பகுப்பாய்வு", icon: Cpu },
-    { id: "case_workspace", labelEn: "Case Workspace", labelTa: "வழக்கு பணிமனை", icon: Terminal },
-    { id: "clause_intelligence", labelEn: "Clause Intelligence", labelTa: "விதிமுறைகள் நுண்ணறிவு", icon: Binary },
-    { id: "risk_detection", labelEn: "Risk Detection", labelTa: "அபாய வரைபடம் (Threat Map)", icon: ShieldAlert },
-    { id: "citations", labelEn: "Citations", labelTa: "சான்றுகள்", icon: Highlighter },
-    { id: "reports", labelEn: "Reports", labelTa: "அறிக்கைகள்", icon: FileBarChart },
-    { id: "settings", labelEn: "Settings", labelTa: "அமைப்புகள்", icon: Sliders },
+  // Filter conversations by search term
+  const filtered = conversations.filter((c) =>
+    c.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Group conversations: Today, Yesterday, Previous 7 Days, Older
+  const groups = [
+    { key: "today", label: t.today, items: filtered.filter((c) => c.timeCategory === "today") },
+    { key: "yesterday", label: t.yesterday, items: filtered.filter((c) => c.timeCategory === "yesterday") },
+    { key: "previous7Days", label: t.previous7Days, items: filtered.filter((c) => c.timeCategory === "previous7Days") },
+    { key: "older", label: t.older, items: filtered.filter((c) => c.timeCategory === "older") }
   ];
 
-  const handleNewCase = () => {
-    setActiveDocument(null);
-    setIsDocViewerOpen(false);
-    setActiveNavSection("case_workspace");
-    window.dispatchEvent(new CustomEvent("start-new-chat"));
-  };
+  return (
+    <>
+      {/* Mobile Backdrop */}
+      {isMobileSidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
 
-  if (isCollapsed) {
-    return (
-      <aside className="forensic-sidebar-collapsed">
-        <button
-          onClick={() => setIsCollapsed(false)}
-          className="btn-sidebar-collapse font-mono-tech"
-          title="Expand Command Navigation"
-        >
-          <PanelLeft size={16} />
-        </button>
-
-        <button
-          onClick={handleNewCase}
-          className="btn-new-case-mini"
-          title="New Case Dossier"
-        >
-          <Plus size={16} />
-        </button>
-
-        <div className="collapsed-nav-icons">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeNavSection === item.id;
-            return (
+      <aside className={`sidebar ${isMobileSidebarOpen ? "mobile-open" : ""}`} role="navigation">
+        {/* Sidebar Header */}
+        <div className="sidebar-header">
+          <div className="brand-row">
+            <div className="brand-logo">
+              <span className="brand-dot" aria-hidden="true"></span>
+              <span>{t.brand}</span>
+            </div>
+            {isMobileSidebarOpen && (
               <button
-                key={item.id}
-                onClick={() => setActiveNavSection(item.id)}
-                className={`collapsed-nav-btn ${isActive ? "active" : ""}`}
-                title={isTamil ? item.labelTa : item.labelEn}
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="history-delete-btn"
+                style={{ opacity: 1 }}
               >
-                <Icon size={16} />
+                <X size={16} />
               </button>
+            )}
+          </div>
+          <span className="brand-tagline">{t.tagline}</span>
+
+          {/* + New Chat Action */}
+          <button
+            onClick={createNewChat}
+            className="btn-new-chat"
+            title="Start a new legal conversation"
+          >
+            <Plus size={15} className="plus-icon" />
+            <span>{t.newChat}</span>
+          </button>
+
+          {/* Search Bar */}
+          <div className="sidebar-search">
+            <Search size={13} className="sidebar-search-icon" />
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search conversations"
+            />
+          </div>
+        </div>
+
+        {/* Documents Shelf (Section 2 of ui_look.md) */}
+        <div className="sidebar-docs-section">
+          <div className="sidebar-section-title">
+            <FolderClosed size={12} color="var(--blue-primary)" />
+            <span>{language === "ta" ? "ஆவணங்கள்" : "Documents"}</span>
+          </div>
+          <div className="sidebar-docs-list">
+            {SAMPLE_DOCUMENTS.map((doc) => {
+              const isSelected = activeConversation?.document?.id === doc.id;
+              const isJudg = doc.category === "judgment";
+              return (
+                <button
+                  key={doc.id}
+                  onClick={() => openDocument(doc.id)}
+                  className={`sidebar-doc-card ${isSelected ? "active" : ""}`}
+                  title={doc.filename}
+                >
+                  <div className="doc-card-icon">
+                    {isJudg ? <Gavel size={13} color="#818CF8" /> : <FileText size={13} color="var(--blue-primary)" />}
+                  </div>
+                  <div className="doc-card-content">
+                    <span className="doc-card-title">{doc.filename.replace(/\.pdf$/, "").replace(/_/g, " ")}</span>
+                    <span className="doc-card-meta">{doc.totalPages} {t.pages}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* History / Memory Section */}
+        <div className="sidebar-history">
+          <div className="sidebar-section-title" style={{ padding: "0 4px" }}>
+            <MessageSquare size={12} />
+            <span>{language === "ta" ? "உரையாடல் வரலாறு" : "History"}</span>
+          </div>
+
+          {groups.map((grp) => {
+            if (grp.items.length === 0) return null;
+            return (
+              <div key={grp.key} className="history-group">
+                <div className="history-group-title">{grp.label}</div>
+                <div className="history-items">
+                  {grp.items.map((conv) => {
+                    const isActive = conv.id === activeConversationId;
+                    return (
+                      <button
+                        key={conv.id}
+                        onClick={() => selectConversation(conv.id)}
+                        className={`history-item ${isActive ? "active" : ""}`}
+                        title={conv.title}
+                      >
+                        <div className="history-item-content">
+                          <MessageSquare size={13} style={{ flexShrink: 0 }} />
+                          <span className="history-item-title">{conv.title}</span>
+                        </div>
+                        <button
+                          onClick={(e) => deleteConversation(conv.id, e)}
+                          className="history-delete-btn"
+                          title="Delete conversation"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="sidebar-footer">
+          {/* User Profile Summary */}
+          <div
+            className="user-profile-row"
+            onClick={() => setIsProfileOpen(true)}
+            title="View legal practitioner credentials"
+          >
+            <div className="user-avatar">RK</div>
+            <div className="user-info">
+              <span className="user-name">{t.profileModal.name}</span>
+              <span className="user-role">{t.profileModal.org}</span>
+            </div>
+          </div>
+
+          {/* Bottom Actions: Language Switcher + Settings */}
+          <div className="footer-nav-row">
+            <LanguageSwitcher />
+
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="footer-btn"
+              title={t.settings}
+            >
+              <Settings size={14} />
+              <span>{t.settings}</span>
+            </button>
+          </div>
         </div>
       </aside>
-    );
-  }
-
-  return (
-    <aside id="forensic-sidebar" className="forensic-sidebar-expanded">
-      {/* Brand & System Identifier */}
-      <div className="sidebar-forensic-header">
-        <div className="brand-lockup">
-          <div className="brand-dot-crimson"></div>
-          <div className="brand-title font-mono-tech">
-            LEGAL<span className="text-crimson font-bold">INTEL</span>
-          </div>
-          <span className="brand-sub-tag font-mono-tech">[ v2.6 // PRO ]</span>
-        </div>
-
-        <button
-          onClick={() => setIsCollapsed(true)}
-          className="btn-sidebar-collapse"
-          title="Collapse"
-        >
-          <PanelLeftClose size={15} />
-        </button>
-      </div>
-
-      {/* Primary Action: + NEW CASE DOSSIER */}
-      <div className="sidebar-action-wrap">
-        <button
-          onClick={handleNewCase}
-          className="btn-new-case font-mono-tech"
-        >
-          <Plus size={14} color="#E50914" />
-          <span>{isTamil ? "+ புதிய வழக்கு" : "+ ANALYZE NEW DOCUMENT"}</span>
-        </button>
-      </div>
-
-      {/* Primary Technical Navigation List */}
-      <div className="sidebar-nav-scroller">
-        <div className="sidebar-group-label font-mono-tech">
-          // SYSTEM NAVIGATION
-        </div>
-
-        <nav className="forensic-nav-list">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeNavSection === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveNavSection(item.id)}
-                className={`forensic-nav-item ${isActive ? "active" : ""}`}
-              >
-                <div className="nav-item-left">
-                  <Icon size={15} className="nav-icon" />
-                  <span className="nav-label">{isTamil ? item.labelTa : item.labelEn}</span>
-                </div>
-                {isActive && <div className="nav-active-pip" />}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Active Document Mini Metadata Strip */}
-        {activeDocument && (
-          <div className="sidebar-doc-card">
-            <div className="doc-card-title-row font-mono-tech">
-              <FileText size={12} color="#E50914" />
-              <span>ACTIVE DOSSIER</span>
-            </div>
-            <div className="sidebar-doc-name" title={activeDocument.filename}>
-              {activeDocument.filename}
-            </div>
-            <div className="sidebar-doc-meta font-mono-tech">
-              <span>{activeDocument.totalPages || 14} PAGES</span>
-              <span>·</span>
-              <span className="text-crimson">INDEXED</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Forensic Footer / Encryption Status */}
-      <div className="sidebar-forensic-footer font-mono-tech">
-        <div className="footer-status-row">
-          <div className="pulse-beacon-container">
-            <span className="beacon-pip red-beacon"></span>
-            <span className="text-muted">SESSION STATUS:</span>
-          </div>
-          <span className="text-crimson">SECURE</span>
-        </div>
-        <div className="footer-crypto-text">
-          <span>AES-256 GCM</span>
-          <span>·</span>
-          <span>AIR-GAPPED AUDIT</span>
-        </div>
-      </div>
-    </aside>
+    </>
   );
 }
-
-export default Sidebar;
