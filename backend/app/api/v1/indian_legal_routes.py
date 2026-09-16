@@ -23,16 +23,18 @@ class IndianLegalQueryRequest(BaseModel):
     question: str
 
 
-@router.post("/judgment-summary")
-def summarize_judgment(payload: JudgmentRequest, db: Session = Depends(get_db)):
-    """Summarize Indian court judgments into structured facts, issues, and rulings."""
-    return process_court_judgment(db, payload.judgment_text)
+@router.get("/{document_id}/judgment-summary")
+def summarize_judgment(document_id: str, db: Session = Depends(get_db)):
+    """Summarize Indian court judgments into structured facts (Mocked Demo)."""
+    from app.services.demo_response_service import process_demo_request
+    return process_demo_request(db, document_id, "judgment-summary")
 
 
-@router.post("/court-order")
-def parse_court_order(payload: CourtOrderRequest, db: Session = Depends(get_db)):
-    """Extract directions, injunctions, and next dates from court orders."""
-    return process_court_order(db, payload.order_text)
+@router.get("/{document_id}/court-order")
+def parse_court_order(document_id: str, db: Session = Depends(get_db)):
+    """Extract directions, injunctions, and next dates from court orders (Mocked Demo)."""
+    from app.services.demo_response_service import process_demo_request
+    return process_demo_request(db, document_id, "court-order")
 
 
 @router.post("/context-qa")
