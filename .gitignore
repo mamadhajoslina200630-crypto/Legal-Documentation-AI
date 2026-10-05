@@ -44,6 +44,7 @@ dist/
 frontend/dist/
 
 push_to_github.bat
+scratch/
 
 # OS / Editor artifacts
 .DS_Store

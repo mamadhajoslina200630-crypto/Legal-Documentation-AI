@@ -51,7 +51,7 @@ export default function ChatHeader() {
               className={`mobile-tab-btn ${isSplitOpen ? "active" : ""}`}
             >
               <FileText size={11} />
-              <span>{language === "ta" ? "ஆவணம்" : "Document"}</span>
+              <span>{t.documentView || "Document"}</span>
             </button>
             <button
               type="button"
@@ -59,7 +59,7 @@ export default function ChatHeader() {
               className={`mobile-tab-btn ${!isSplitOpen ? "active" : ""}`}
             >
               <Sparkles size={11} />
-              <span>{language === "ta" ? "உரையாடல்" : "Chat"}</span>
+              <span>{t.chatView || "Chat"}</span>
             </button>
           </div>
         )}
@@ -72,7 +72,11 @@ export default function ChatHeader() {
             title={isSplitOpen ? t.closeSplitView : t.splitView}
           >
             {isSplitOpen ? <EyeOff size={13} /> : <Eye size={13} />}
-            <span>{isSplitOpen ? (language === "ta" ? "பார்வையை மறை" : "Hide Document") : (language === "ta" ? "ஆவணத்தைக் காட்டு" : "Show Document")}</span>
+            <span>
+              {isSplitOpen
+                ? (language === "hi" ? "दस्तावेज़ छिपाएं" : language === "ml" ? "കാഴ്ച മറയ്ക്കുക" : language === "ta" ? "பார்வையை மறை" : "Hide Document")
+                : (language === "hi" ? "दस्तावेज़ दिखाएं" : language === "ml" ? "രേഖ കാണിക്കുക" : language === "ta" ? "ஆவணத்தைக் காட்டு" : "Show Document")}
+            </span>
           </button>
         )}
       </div>

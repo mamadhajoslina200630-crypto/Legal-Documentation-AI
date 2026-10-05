@@ -1,11 +1,21 @@
 import React from "react";
-import { X, Award, ShieldCheck, Briefcase, FileCheck, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { X, Award, ShieldCheck, Briefcase, FileCheck, Clock, LogOut } from "lucide-react";
 import { useDocumentContext } from "../context/DocumentContext";
+import { useAuthContext } from "../context/AuthContext";
 import { translations } from "../context/translations";
 
 export default function ProfileModal() {
+  const navigate = useNavigate();
   const { isProfileOpen, setIsProfileOpen, language } = useDocumentContext();
+  const { logout } = useAuthContext();
   const t = translations[language] || translations.en;
+
+  const handleSignOut = () => {
+    logout();
+    setIsProfileOpen(false);
+    navigate("/login", { replace: true });
+  };
 
   if (!isProfileOpen) return null;
 
@@ -139,7 +149,29 @@ export default function ProfileModal() {
           </div>
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button
+            onClick={handleSignOut}
+            className="btn-outline-secondary"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              color: "var(--risk-critical-text)",
+              borderColor: "var(--risk-critical-border)",
+              backgroundColor: "transparent",
+              padding: "7px 14px",
+              borderRadius: "var(--radius-md)",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer"
+            }}
+            title="Sign out of Legal AI"
+          >
+            <LogOut size={13} />
+            <span>Sign Out</span>
+          </button>
+
           <button
             onClick={() => setIsProfileOpen(false)}
             className="btn-primary-action"

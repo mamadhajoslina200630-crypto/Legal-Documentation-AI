@@ -50,8 +50,8 @@
   --risk-low-border: rgba(22, 163, 74, 0.25);
 
   /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: 'Inter', 'Noto Sans Telugu', 'Noto Sans Devanagari', 'Noto Sans Malayalam', 'Noto Sans Tamil', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Noto Sans Telugu', 'Noto Sans Devanagari', monospace;
 
   /* Sizing & Radius */
   --sidebar-width: 280px;
@@ -84,6 +84,10 @@ html, body, #root {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+.font-mono-tech {
+  font-family: var(--font-mono);
 }
 
 /* Custom Minimal Scrollbar */
@@ -459,27 +463,41 @@ html, body, #root {
   background-color: #FFFFFF;
   border: 1px solid var(--sidebar-border);
   border-radius: var(--radius-md);
-  padding: 5px 10px;
+  padding: 4px 8px;
   color: var(--sidebar-text-secondary);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  user-select: none;
 }
 
 .lang-switcher-btn:hover {
   border-color: var(--blue-primary);
+}
+
+.lang-switcher-btn .lang-option {
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.lang-switcher-btn .lang-option:hover {
+  background-color: var(--blue-subtle);
   color: var(--blue-primary);
 }
 
 .lang-switcher-btn .active-lang {
   color: var(--blue-primary);
   font-weight: 700;
+  background-color: var(--blue-accent);
 }
 
 .lang-switcher-btn .lang-divider {
-  margin: 0 4px;
+  margin: 0 2px;
   color: var(--sidebar-text-muted);
+  opacity: 0.6;
 }
 
 /* User Profile Row */

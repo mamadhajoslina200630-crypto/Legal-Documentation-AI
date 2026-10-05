@@ -3,16 +3,18 @@ import { Languages } from "lucide-react";
 import { useDocumentContext } from "../../context/DocumentContext";
 
 export function LanguageSwitcher() {
-  const { selectedLanguage, setSelectedLanguage } = useDocumentContext();
+  const { selectedLanguage, setSelectedLanguage, language, setLanguage } = useDocumentContext();
+  const currentLang = selectedLanguage || language || "en";
+  const changeLanguage = (code) => {
+    if (setSelectedLanguage) setSelectedLanguage(code);
+    if (setLanguage) setLanguage(code);
+  };
 
   const languages = [
     { code: "en", label: "English" },
-    { code: "hi", label: "हिंदी (Hindi)" },
     { code: "ta", label: "தமிழ் (Tamil)" },
+    { code: "ml", label: "മലയാളം (Malayalam)" },
     { code: "te", label: "తెలుగు (Telugu)" },
-    { code: "kn", label: "ಕನ್ನಡ (Kannada)" },
-    { code: "bn", label: "বাংলা (Bengali)" },
-    { code: "mr", label: "मराठी (Marathi)" },
   ];
 
   return (
@@ -20,8 +22,8 @@ export function LanguageSwitcher() {
       <Languages size={18} color="var(--accent-indigo)" />
       <select
         id="language-select-dropdown"
-        value={selectedLanguage}
-        onChange={(e) => setSelectedLanguage(e.target.value)}
+        value={currentLang}
+        onChange={(e) => changeLanguage(e.target.value)}
         style={{
           backgroundColor: "rgba(255, 255, 255, 0.06)",
           border: "1px solid var(--border-subtle)",

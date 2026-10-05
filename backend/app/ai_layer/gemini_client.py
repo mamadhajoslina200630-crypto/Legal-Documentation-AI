@@ -40,8 +40,20 @@ def _generate_offline_legal_response(prompt: str, system_prompt: Optional[str] =
             "- **Low Risk (Clause 22.3 - Unilateral Jurisdiction)**: High Court bench location favors the counterparty."
         )
 
-    if "translat" in p_lower or "hindi" in p_lower or "tamil" in p_lower:
-        if "hindi" in p_lower:
+    if "translat" in p_lower or "hindi" in p_lower or "tamil" in p_lower or "malayalam" in p_lower or "telugu" in p_lower or "മലയാളം" in prompt or "తెలుగు" in prompt:
+        if "telugu" in p_lower or "tel_telu" in p_lower or "తెలుగు" in prompt or " te " in p_lower or p_lower.endswith(" te"):
+            return (
+                "**తెలుగు అనువాదం (Telugu Translation)**:\n"
+                "ఈ వాణిజ్య ఒప్పందం ఇరుపక్షాల మధ్య చట్టపరమైన హక్కులు, బాధ్యతలు మరియు వివాద పరిష్కార నిబంధనలను నిర్వచిస్తుంది. "
+                "అన్ని వివాదాలు భారతీయ ఆర్బిట్రేషన్ చట్టం, 1996 ప్రకారం పరిష్కరించబడతాయి."
+            )
+        if "malayalam" in p_lower or "mal_mlym" in p_lower or "മലയാളം" in prompt or " ml " in p_lower:
+            return (
+                "**മലയാള പരിഭാഷ (Malayalam Translation)**:\n"
+                "ഈ വാണിജ്യ കരാർ ഇരു കക്ഷികളും തമ്മിലുള്ള നിയമപരമായ ബാധ്യതകളും പണമടയ്ക്കൽ നിബന്ധനകളും വ്യക്തമാക്കുന്നു. "
+                "എല്ലാ തർക്കങ്ങളും ഇന്ത്യൻ ആർബിട്രേഷൻ ആക്ട്, 1996 പ്രകാരം പരിഹരിക്കപ്പെടുന്നതാണ്."
+            )
+        if "hindi" in p_lower or "हिन्दी" in prompt:
             return (
                 "**हिंदी अनुवाद (Hindi Translation)**:\n"
                 "यह एक वाणिज्यिक सेवा समझौता है जो दोनों पक्षों के बीच कानूनी अधिकारों, जिम्मेदारियों और विवाद समाधान को परिभाषित करता है। "

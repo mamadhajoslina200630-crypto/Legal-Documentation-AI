@@ -16,8 +16,11 @@ import {
 import { useDocumentContext } from "../../context/DocumentContext";
 
 export function DocumentDNA() {
-  const { activeDocument, selectedLanguage, caseId, aiConfidence } = useDocumentContext();
-  const isTamil = selectedLanguage === "ta";
+  const { activeDocument, selectedLanguage, language, caseId, aiConfidence } = useDocumentContext();
+  const currentLang = language || selectedLanguage || "en";
+  const isTamil = currentLang === "ta";
+  const isMalayalam = currentLang === "ml";
+  const isTelugu = currentLang === "te";
   const [copiedHash, setCopiedHash] = React.useState(false);
 
   const docHash = "SHA256: 4f8b9e1c2a0349f7b6d1829e01f54318c4e0987ad029bf31a679234857ef091a";
@@ -29,15 +32,15 @@ export function DocumentDNA() {
   };
 
   const DNA_METRICS = [
-    { labelEn: "DOCUMENT TYPE", labelTa: "ஆவண வகை", value: activeDocument?.docType || "Commercial Lease Agreement", icon: FileCheck2 },
-    { labelEn: "TOTAL PAGES", labelTa: "மொத்த பக்கங்கள்", value: `${activeDocument?.totalPages || 14} Pages (Indexed)`, icon: Layers },
-    { labelEn: "CLAUSES PARSED", labelTa: "பிரித்தெடுக்கப்பட்ட விதிகள்", value: "24 Clauses / 5 Operational", icon: Binary },
-    { labelEn: "IDENTIFIED ENTITIES", labelTa: "சம்பந்தப்பட்ட நிறுவனங்கள்", value: "Horizon Properties Pvt Ltd vs Nexatech Solutions", icon: Users2 },
-    { labelEn: "ACTIVE OBLIGATIONS", labelTa: "செயலில் உள்ள கடமைகள்", value: "18 Contractual Terms", icon: ShieldCheck },
-    { labelEn: "CRITICAL DEADLINES", labelTa: "முக்கிய காலக்கெடு", value: "3 Notice / Vacation Timelines", icon: CalendarClock },
-    { labelEn: "RISK SIGNALS", labelTa: "ஆபத்து சிக்னல்கள்", value: "5 High / Critical Signals", icon: Zap, isRisk: true },
-    { labelEn: "GOVERNING JURISDICTION", labelTa: "சட்ட எல்லை", value: activeDocument?.jurisdiction || "India (Transfer of Property Act, 1882)", icon: Compass },
-    { labelEn: "AI FORENSIC CONFIDENCE", labelTa: "AI நம்பகத்தன்மை", value: `${aiConfidence} (Ground Truth Verified)`, icon: Fingerprint, isHighlighted: true },
+    { labelEn: "DOCUMENT TYPE", labelTa: "ஆவண வகை", labelMl: "രേഖാ തരം", labelTe: "పత్రం రకం", value: activeDocument?.docType || "Commercial Lease Agreement", icon: FileCheck2 },
+    { labelEn: "TOTAL PAGES", labelTa: "மொத்த பக்கங்கள்", labelMl: "ആകെ പേജുകൾ", labelTe: "మొత్తం పేజీలు", value: `${activeDocument?.totalPages || 14} Pages (Indexed)`, icon: Layers },
+    { labelEn: "CLAUSES PARSED", labelTa: "பிரித்தெடுக்கப்பட்ட விதிகள்", labelMl: "വിശകലനം ചെയ്ത നിബന്ധനകൾ", labelTe: "విశ్లేషించిన నిబంధనలు", value: "24 Clauses / 5 Operational", icon: Binary },
+    { labelEn: "IDENTIFIED ENTITIES", labelTa: "சம்பந்தப்பட்ட நிறுவனங்கள்", labelMl: "കണ്ടെത്തിയ കക്ഷികൾ", labelTe: "గుర్తించిన సంస్థలు", value: "Horizon Properties Pvt Ltd vs Nexatech Solutions", icon: Users2 },
+    { labelEn: "ACTIVE OBLIGATIONS", labelTa: "செயலில் உள்ள கடமைகள்", labelMl: "സജീവ ബാധ്യതകൾ", labelTe: "సక్రియ బాధ్యతలు", value: "18 Contractual Terms", icon: ShieldCheck },
+    { labelEn: "CRITICAL DEADLINES", labelTa: "முக்கிய காலக்கெடு", labelMl: "പ്രധാന സമയപരിധികൾ", labelTe: "ముఖ్యమైన గడువులు", value: "3 Notice / Vacation Timelines", icon: CalendarClock },
+    { labelEn: "RISK SIGNALS", labelTa: "ஆபத்து சிக்னல்கள்", labelMl: "അപകട സൂചനകൾ", labelTe: "రిస్క్ సంకేతాలు", value: "5 High / Critical Signals", icon: Zap, isRisk: true },
+    { labelEn: "GOVERNING JURISDICTION", labelTa: "சட்ட எல்லை", labelMl: "നിയമ അധികാരപരിധി", labelTe: "న్యాయ పరిధి", value: activeDocument?.jurisdiction || "India (Transfer of Property Act, 1882)", icon: Compass },
+    { labelEn: "AI FORENSIC CONFIDENCE", labelTa: "AI நம்பகத்தன்மை", labelMl: "AI കൃത്യത നിരക്ക്", labelTe: "AI ఖచ్చితత్వ రేటు", value: `${aiConfidence} (Ground Truth Verified)`, icon: Fingerprint, isHighlighted: true },
   ];
 
   return (
@@ -97,7 +100,7 @@ export function DocumentDNA() {
             >
               <div className="metric-card-top">
                 <span className="metric-tag font-mono-tech">
-                  [ 0{idx + 1} // {isTamil ? metric.labelTa : metric.labelEn} ]
+                  [ 0{idx + 1} // {isTelugu ? metric.labelTe : isMalayalam ? metric.labelMl : isTamil ? metric.labelTa : metric.labelEn} ]
                 </span>
                 <Icon size={14} color={metric.isRisk ? "#E50914" : metric.isHighlighted ? "#B30000" : "#8A8A8A"} />
               </div>

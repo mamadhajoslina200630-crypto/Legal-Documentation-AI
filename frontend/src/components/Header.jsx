@@ -9,6 +9,8 @@ export function Header() {
     setIsDocViewerOpen,
     selectedLanguage,
     setSelectedLanguage,
+    language,
+    setLanguage,
     caseId,
     aiConfidence,
     securityStatus,
@@ -16,7 +18,29 @@ export function Header() {
     setRedlineMode,
   } = useDocumentContext();
 
-  const isTamil = selectedLanguage === "ta";
+  const currentLang = selectedLanguage || language || "en";
+  const isTamil = currentLang === "ta";
+  const isMalayalam = currentLang === "ml";
+  const isTelugu = currentLang === "te";
+
+  const handleLangChange = (code) => {
+    if (setSelectedLanguage) setSelectedLanguage(code);
+    if (setLanguage) setLanguage(code);
+  };
+
+  const getSplitLabel = () => {
+    if (isDocViewerOpen) {
+      if (isTelugu) return "[ పత్రం మూసివేయి ]";
+      if (isMalayalam) return "[ രേഖ അടയ്ക്കുക ]";
+      if (isTamil) return "[ ஆவணத்தை மூடு ]";
+      return "[ CLOSE SPLIT ]";
+    } else {
+      if (isTelugu) return "[ పత్రం వీక్షించండి ]";
+      if (isMalayalam) return "[ രേഖ കാണുക ]";
+      if (isTamil) return "[ ஆவணத்தைப் பார் ]";
+      return "[ VIEW DOCUMENT ]";
+    }
+  };
 
   return (
     <header id="command-top-bar" className="forensic-top-bar">
@@ -78,23 +102,39 @@ export function Header() {
             title={isDocViewerOpen ? "Close document split view" : "View original document side-by-side"}
           >
             <Split size={13} />
-            <span>{isDocViewerOpen ? (isTamil ? "[ ஆவணத்தை மூடு ]" : "[ CLOSE SPLIT ]") : (isTamil ? "[ ஆவணத்தைப் பார் ]" : "[ VIEW DOCUMENT ]")}</span>
+            <span>{getSplitLabel()}</span>
           </button>
         )}
 
-        {/* Strict Bilingual: English & Tamil */}
+        {/* Multilingual Switcher: English, Tamil, Malayalam, Telugu */}
         <div className="lang-switcher-forensic font-mono-tech">
           <button
-            onClick={() => setSelectedLanguage("en")}
-            className={`lang-btn-tech ${selectedLanguage === "en" ? "active" : ""}`}
+            onClick={() => handleLangChange("en")}
+            className={`lang-btn-tech ${currentLang === "en" ? "active" : ""}`}
+            title="English"
           >
             EN
           </button>
           <button
-            onClick={() => setSelectedLanguage("ta")}
-            className={`lang-btn-tech ${selectedLanguage === "ta" ? "active" : ""}`}
+            onClick={() => handleLangChange("ta")}
+            className={`lang-btn-tech ${currentLang === "ta" ? "active" : ""}`}
+            title="Tamil"
           >
             தமிழ்
+          </button>
+          <button
+            onClick={() => handleLangChange("ml")}
+            className={`lang-btn-tech ${currentLang === "ml" ? "active" : ""}`}
+            title="Malayalam"
+          >
+            മലയാളം
+          </button>
+          <button
+            onClick={() => handleLangChange("te")}
+            className={`lang-btn-tech ${currentLang === "te" ? "active" : ""}`}
+            title="Telugu"
+          >
+            తెలుగు
           </button>
         </div>
       </div>
